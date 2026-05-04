@@ -23,7 +23,9 @@ type Action =
   | { type: 'LOAD_SAVED_WORK'; payload: any }
   | { type: 'SETUP_CHALLENGE_MODE'; payload: { size: number } }
   | { type: 'DELETE_FREE_TOKEN'; payload: { tokenId: number } }
-  | { type: 'USE_THEMATIC_WORD'; payload: { wordId: number; rowIndex: number } };
+  | { type: 'USE_THEMATIC_WORD'; payload: { wordId: number; rowIndex: number } }
+  | { type: 'COMPLETE_TUTORIAL' }
+  | { type: 'COMPLETE_DAILY_CHALLENGE' };
 
 const initialWord = "MAGIA";
 const initialRows = initialWord.split('').map((letter, index) => ({
@@ -64,7 +66,9 @@ const initialState: GameState = {
   suggestedNames: getRandomNames(),
   verticalTitle: '',
   readOnlyMode: false,
-  thematicWords: []
+  thematicWords: [],
+  tutorialCompleted: localStorage.getItem('vertic_tutorial_completed') === 'true',
+  dailyChallengeLastDone: localStorage.getItem('vertic_daily_done_date')
 };
 
 // Accents remover for the setup
@@ -432,6 +436,15 @@ function gameReducer(state: GameState, action: Action): GameState {
         r.leftToken?.id === tokenId ? { ...r, leftToken: null } : r
       );
       return { ...state, freeWordTokens: newTokens, freeRows: newRows };
+    }
+    case 'COMPLETE_TUTORIAL': {
+      localStorage.setItem('vertic_tutorial_completed', 'true');
+      return { ...state, tutorialCompleted: true };
+    }
+    case 'COMPLETE_DAILY_CHALLENGE': {
+      const today = new Date().toISOString();
+      localStorage.setItem('vertic_daily_done_date', today);
+      return { ...state, dailyChallengeLastDone: today };
     }
     default: return state;
   }

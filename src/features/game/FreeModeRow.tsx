@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FreeModeRowData } from '../../types';
 import { useGameContext } from '../../hooks/useGameContext';
 import { DraggableWordToken } from './DraggableWordToken';
@@ -43,8 +43,10 @@ const dict: Record<string, string[]> = {
 export const FreeModeRow: React.FC<Props> = ({ row }) => {
   const { state, dispatch } = useGameContext();
   const [leftText, setLeftText] = useState('');
-  
   const [showNameSuggestions, setShowNameSuggestions] = useState(false);
+  // Rule 1: LL/L disambiguation dialog
+  const [llDialog, setLlDialog] = useState<{ pending: string } | null>(null);
+  const llDialogRef = useRef<HTMLDivElement>(null);
 
   const usedColors = Object.values(state.characterColors);
   const allColors = ['#3b82f6', '#ef4444', '#10b981', '#eab308', '#ec4899', '#8b5cf6'];
@@ -197,6 +199,8 @@ export const FreeModeRow: React.FC<Props> = ({ row }) => {
     
     if (e.key === ' ') {
       e.preventDefault();
+      // Rule 1: check LL ambiguity before moving focus
+      if (checkLlAmbiguity(row.mainInput)) return;
       // focus nexo if applicable
       if (state.gameMode === 'free-nexus' || state.gameMode === 'challenge') {
         const nexoInput = document.getElementById(`nexo-${row.index}`);
@@ -213,6 +217,8 @@ export const FreeModeRow: React.FC<Props> = ({ row }) => {
 
     if (e.key === 'Enter') {
       e.preventDefault();
+      // Rule 1: check LL ambiguity before moving focus
+      if (checkLlAmbiguity(row.mainInput)) return;
       let finalVal = row.mainInput;
       if (finalVal.toLowerCase().startsWith(row.baseLetter.toLowerCase())) {
         finalVal = finalVal.slice(1);
@@ -267,9 +273,25 @@ export const FreeModeRow: React.FC<Props> = ({ row }) => {
     }
   };
 
+  // Rule 1: check LL ambiguity and show dialog if needed.
+  // Returns true if dialog was shown (caller should stop normal processing).
+  const checkLlAmbiguity = (val: string): boolean => {
+    if (llDialog) return true;
+    if (row.baseLetter.toUpperCase() !== 'L') return false;
+    const lower = val.trim().toLowerCase();
+    // Only trigger if starts with exactly one 'l'
+    if (lower.startsWith('l') && !lower.startsWith('ll')) {
+      setLlDialog({ pending: val });
+      return true;
+    }
+    return false;
+  };
+
   const handleMainBlur = () => {
     if (row.isPrefilled) return;
     let finalVal = row.mainInput;
+    // Rule 1: check LL before stripping the leading base-letter
+    if (checkLlAmbiguity(finalVal)) return;
     if (finalVal.toLowerCase().startsWith(row.baseLetter.toLowerCase())) {
       finalVal = finalVal.slice(1);
       dispatch({ type: 'UPDATE_FREE_INPUT', payload: { rowIndex: row.index, mainInput: finalVal }});
@@ -300,6 +322,17 @@ export const FreeModeRow: React.FC<Props> = ({ row }) => {
      }
   };
 
+  // Rule 5: strip orthographic signs from nexo if base word is valid
+  const cleanNexoSigns = (val: string): string => {
+    const stripped = val.replace(/^[¿¡]/, '').replace(/\.\.\./g, '').replace(/…/g, '').trim().toLowerCase();
+    const baseIsValid = nexosList.includes(stripped) || (isVocal && stripped === row.baseLetter.toLowerCase());
+    if (baseIsValid) {
+      // Remove any trailing orthographic signs after the core nexo text
+      return val.replace(/[,;.:\u2026]+$/, '').replace(/\.\.\.$/, '');
+    }
+    return val;
+  };
+
   const handleNexoKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace') {
        const target = e.target as HTMLInputElement;
@@ -314,11 +347,29 @@ export const FreeModeRow: React.FC<Props> = ({ row }) => {
     }
     if (e.key === ' ') {
       e.preventDefault();
+      // Rule 5: clean signs before moving
+      const cleaned = cleanNexoSigns(row.nexo);
+      if (cleaned !== row.nexo) {
+        dispatch({ type: 'UPDATE_FREE_INPUT', payload: { rowIndex: row.index, nexo: cleaned }});
+      }
       document.getElementById(`main-${row.index + 1}`)?.focus();
     }
     if (e.key === 'Enter') {
       e.preventDefault();
+      // Rule 5: clean signs before moving
+      const cleaned = cleanNexoSigns(row.nexo);
+      if (cleaned !== row.nexo) {
+        dispatch({ type: 'UPDATE_FREE_INPUT', payload: { rowIndex: row.index, nexo: cleaned }});
+      }
       document.getElementById(`main-${row.index + 1}`)?.focus();
+    }
+  };
+
+  const handleNexoBlur = () => {
+    // Rule 5: clean orthographic signs when nexo field loses focus
+    const cleaned = cleanNexoSigns(row.nexo);
+    if (cleaned !== row.nexo) {
+      dispatch({ type: 'UPDATE_FREE_INPUT', payload: { rowIndex: row.index, nexo: cleaned }});
     }
   };
 
@@ -335,6 +386,17 @@ export const FreeModeRow: React.FC<Props> = ({ row }) => {
         if (p1 === '.' && (match === '..' || match === '...')) return match; 
         return p1;
      });
+
+     // Proactive cleaning for Rule 5: if it matches a nexo + punctuation, strip punctuation
+     const stripped = val.replace(/^[¿¡]/, '').replace(/\.\.\./g, '').replace(/…/g, '').trim().toLowerCase();
+     const hasPunctuation = /[,;.:]/.test(val);
+     if (hasPunctuation) {
+       const core = val.replace(/[,;.:]/g, '');
+       const coreStripped = core.replace(/^[¿¡]/, '').trim().toLowerCase();
+       if (nexosList.includes(coreStripped) || (isVocal && coreStripped === row.baseLetter.toLowerCase())) {
+         val = core;
+       }
+     }
 
      // Allow ellipsis but once present, no more characters allowed after it.
      if (val.includes('...')) {
@@ -575,6 +637,7 @@ export const FreeModeRow: React.FC<Props> = ({ row }) => {
           tabIndex={state.readOnlyMode ? -1 : 0}
           onChange={handleNexoChange}
           onKeyDown={handleNexoKeyDown}
+          onBlur={handleNexoBlur}
           onDragOver={handleDragOver}
           onDrop={(e) => {
              e.preventDefault();
@@ -601,6 +664,68 @@ export const FreeModeRow: React.FC<Props> = ({ row }) => {
           }}
           title={nexoValid ? '' : 'Nexo no válido'}
         />
+      )}
+
+      {/* Rule 1: LL/L disambiguation dialog */}
+      {llDialog && (
+        <div
+          ref={llDialogRef}
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, width: '100%', height: '100%',
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 9000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <div
+            className="glass-panel animate-fade-in"
+            style={{
+              background: 'var(--bg-primary)',
+              padding: '2rem 2.5rem',
+              borderRadius: '1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem',
+              alignItems: 'center',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+              minWidth: '280px'
+            }}
+          >
+            <p style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-primary)', textAlign: 'center', fontWeight: 600 }}>
+              ¿Palabra con LL o L?
+            </p>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                className="btn btn-primary"
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  // LL chosen: keep the 'l' that was typed. 
+                  // In FreeModeRow, the input box should contain the second 'l' to make it 'LL'.
+                  setLlDialog(null);
+                }}
+              >
+                LL
+              </button>
+              <button
+                className="btn btn-secondary"
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  // L chosen: remove the 'l' that was typed.
+                  let finalVal = llDialog.pending;
+                  if (finalVal.toLowerCase().startsWith('l')) {
+                    finalVal = finalVal.slice(1);
+                  }
+                  dispatch({ type: 'UPDATE_FREE_INPUT', payload: { rowIndex: row.index, mainInput: finalVal }});
+                  setLlDialog(null);
+                }}
+              >
+                L
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

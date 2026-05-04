@@ -85,4 +85,6 @@ export interface GameState {
   verticalTitle: string;
   readOnlyMode: boolean;
   thematicWords: ThematicWord[];
+  tutorialCompleted: boolean;
+  dailyChallengeLastDone: string | null; // ISO date string
 }

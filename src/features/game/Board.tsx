@@ -16,16 +16,7 @@ export const Board: React.FC = () => {
   };
 
   return (
-    <div style={{ 
-      flex: 1, 
-      display: 'flex', 
-      flexDirection: 'column', 
-      gap: '2rem', 
-      padding: '1rem', 
-      maxWidth: '800px', 
-      margin: '0 auto', 
-      width: '100%' 
-    }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2rem', padding: '1rem', maxWidth: '800px', margin: '0 auto', width: '100%' }}>
       {/* Draggable Pool */}
       <div 
          data-droppable="true"
@@ -33,26 +24,9 @@ export const Board: React.FC = () => {
          onDragOver={handleDragOverPool}
          onDrop={handleDropPool}
          className="glass-panel" 
-         style={{ 
-           padding: '1.2rem', 
-           display: 'flex', 
-           gap: '0.75rem', 
-           minHeight: '80px', 
-           alignItems: 'center',
-           flexWrap: 'wrap',
-           justifyContent: 'center'
-         }}
+         style={{ padding: '1rem', display: 'flex', gap: '1rem', minHeight: '80px', alignItems: 'center' }}
       >
-        <div style={{ 
-          color: 'var(--text-secondary)', 
-          width: '100%', 
-          textAlign: 'center', 
-          fontSize: '0.85rem',
-          marginBottom: '0.5rem',
-          fontWeight: '500',
-          textTransform: 'uppercase',
-          letterSpacing: '1px'
-        }}>
+        <div style={{ color: 'var(--text-secondary)', marginRight: 'auto', fontSize: '0.9rem' }}>
           Caracteres Libres
         </div>
         {state.draggablePool.map(char => (
@@ -61,17 +35,11 @@ export const Board: React.FC = () => {
       </div>
 
       {/* Rows Container */}
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '0.75rem',
-        width: '100%'
-      }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         {state.rows.map(row => (
           <AcrosticRow key={row.index} row={row} />
         ))}
       </div>
     </div>
-
   );
 };

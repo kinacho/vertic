@@ -1,7 +1,10 @@
 {
-  "name": "vertic",
-  "private": true,
-  "version": "0.0.0",
+  "name": "verticalogo",
+  "private": false,
+  "version": "1.0.0",
+  "description": "Aplicación interactiva para la creación de acrósticos dinámicos con nexos y desafíos diarios.",
+  "author": "Usuario",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",

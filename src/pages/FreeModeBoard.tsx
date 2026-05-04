@@ -65,6 +65,7 @@ const FreeModeBoard: React.FC = () => {
               freePhrase: state.freePhrase
           });
           localStorage.setItem('vertic_saved_works', JSON.stringify(works));
+          dispatch({ type: 'COMPLETE_DAILY_CHALLENGE' });
           dispatch({ type: 'SET_SCREEN', payload: 'home' });
           navigate('/saved-works');
       } else {

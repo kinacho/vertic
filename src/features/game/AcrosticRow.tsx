@@ -13,6 +13,7 @@ export const AcrosticRow: React.FC<Props> = ({ row }) => {
   const { state, dispatch } = useGameContext();
   const [bubbleVisible, setBubbleVisible] = useState(false);
   const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 });
+  const [llDialog, setLlDialog] = useState<{ pending: string } | null>(null);
   const rowRef = useRef<HTMLDivElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -31,6 +32,30 @@ export const AcrosticRow: React.FC<Props> = ({ row }) => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     dispatch({ type: 'UPDATE_INPUT', payload: { rowIndex: row.index, text: e.target.value } });
+  };
+  
+  const checkLlAmbiguity = (val: string): boolean => {
+    if (llDialog) return true;
+    if (row.baseLetter.toUpperCase() !== 'L') return false;
+    const lower = val.trim().toLowerCase();
+    // Only trigger if starts with exactly one 'l'
+    if (lower.startsWith('l') && !lower.startsWith('ll')) {
+      setLlDialog({ pending: val });
+      return true;
+    }
+    return false;
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === ' ' || e.key === 'Enter' || e.key === 'Tab') {
+      if (checkLlAmbiguity(row.inputText)) {
+        e.preventDefault();
+      }
+    }
+  };
+
+  const handleBlur = () => {
+    checkLlAmbiguity(row.inputText);
   };
 
   const handleMouseEnter = (e: React.MouseEvent) => {
@@ -56,13 +81,11 @@ export const AcrosticRow: React.FC<Props> = ({ row }) => {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 'clamp(0.5rem, 2vw, 1rem)',
-        padding: '0.75rem',
-        background: isMatched ? 'var(--accent-secondary-glow)' : 'var(--bg-glass)',
+        gap: '1rem',
+        padding: '0.5rem',
+        background: isMatched ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
         borderRadius: 'var(--radius-md)',
-        transition: 'var(--transition-base)',
-        border: `1px solid ${isMatched ? 'var(--accent-secondary)' : 'var(--border-glass)'}`,
-        flexWrap: 'wrap'
+        transition: 'background 0.3s'
       }}
     >
       {/* Drop Slot */}
@@ -79,8 +102,7 @@ export const AcrosticRow: React.FC<Props> = ({ row }) => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: row.charSlot ? 'transparent' : 'rgba(255,255,255,0.02)',
-          flexShrink: 0
+          background: row.charSlot ? 'transparent' : 'rgba(255,255,255,0.02)'
         }}
       >
         {row.charSlot && <CharacterToken char={row.charSlot} />}
@@ -93,12 +115,10 @@ export const AcrosticRow: React.FC<Props> = ({ row }) => {
         style={{
           fontSize: '2rem',
           fontWeight: 'bold',
-          color: 'var(--accent-primary)',
-          width: '40px',
+          color: 'var(--accent-secondary)',
+          width: '30px',
           textAlign: 'center',
-          cursor: state.suggestionsActive ? 'help' : 'default',
-          flexShrink: 0,
-          textShadow: '0 0 10px var(--accent-primary-glow)'
+          cursor: state.suggestionsActive ? 'help' : 'default'
         }}
       >
         {row.baseLetter}
@@ -109,21 +129,20 @@ export const AcrosticRow: React.FC<Props> = ({ row }) => {
         type="text"
         value={row.inputText}
         onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+        onBlur={handleBlur}
         placeholder="..."
         style={{
-          flex: '1 1 200px',
+          flex: 1,
           background: 'transparent',
           border: 'none',
-          borderBottom: '2px solid var(--border-glass)',
+          borderBottom: '1px solid var(--border-glass)',
           color: 'var(--text-primary)',
           fontSize: '1.2rem',
           padding: '0.5rem',
           outline: 'none',
-          fontFamily: 'inherit',
-          transition: 'var(--transition-base)'
+          fontFamily: 'inherit'
         }}
-        onFocus={(e) => e.target.style.borderBottomColor = 'var(--accent-primary)'}
-        onBlur={(e) => e.target.style.borderBottomColor = 'var(--border-glass)'}
       />
 
       {state.suggestionsActive && (
@@ -132,6 +151,64 @@ export const AcrosticRow: React.FC<Props> = ({ row }) => {
           position={bubblePos}
           isVisible={bubbleVisible}
         />
+      )}
+
+      {/* Rule 1: LL/L disambiguation dialog */}
+      {llDialog && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, width: '100%', height: '100%',
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 9000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <div
+            className="glass-panel animate-fade-in"
+            style={{
+              background: 'var(--bg-primary)',
+              padding: '2rem 2.5rem',
+              borderRadius: '1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem',
+              alignItems: 'center',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+              minWidth: '280px'
+            }}
+          >
+            <p style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-primary)', textAlign: 'center', fontWeight: 600 }}>
+              ¿Palabra con LL o L?
+            </p>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                className="btn btn-primary"
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  setLlDialog(null);
+                }}
+              >
+                LL
+              </button>
+              <button
+                className="btn btn-secondary"
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  let finalVal = llDialog.pending;
+                  if (finalVal.toLowerCase().startsWith('l')) {
+                    finalVal = finalVal.slice(1);
+                  }
+                  dispatch({ type: 'UPDATE_INPUT', payload: { rowIndex: row.index, text: finalVal } });
+                  setLlDialog(null);
+                }}
+              >
+                L
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

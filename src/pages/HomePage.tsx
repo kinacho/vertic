@@ -11,76 +11,58 @@ const HomePage: React.FC = () => {
   const [hoveredLang, setHoveredLang] = React.useState<string | null>(null);
   const [hoveredMode, setHoveredMode] = React.useState<string | null>(null);
   const [hasSavedWorks, setHasSavedWorks] = React.useState(false);
-  const [isTutorialCompleted, setIsTutorialCompleted] = React.useState(false);
 
   React.useEffect(() => {
-    const completed = localStorage.getItem('vertic_tutorial_completed') === 'true';
-    setIsTutorialCompleted(completed);
-    try {
-      const stored = localStorage.getItem('vertic_saved_works');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
-          setHasSavedWorks(true);
-        }
-      }
-    } catch (e) {
-      console.error('Error parsing saved works', e);
-    }
+     try {
+         const stored = localStorage.getItem('vertic_saved_works');
+         if (stored) {
+             const parsed = JSON.parse(stored);
+             if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                 setHasSavedWorks(true);
+             }
+         }
+     } catch (e) {}
   }, []);
 
   const AcrIcon = ({ isHovered }: { isHovered: boolean }) => (
-    <div className="acr-icon" style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'flex-start', 
-      lineHeight: 1.1, 
-      fontSize: '1.2rem', 
-      fontFamily: 'var(--font-mono)', 
-      fontWeight: 'bold' 
-    }}>
-      <div style={{ display: 'flex', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-        <span style={{ color: 'var(--accent-primary)' }}>A</span>
-        {isHovered && <span className="animate-fade-in" style={{ color: 'var(--text-secondary)' }}>lbert</span>}
-      </div>
-      <div style={{ display: 'flex', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-        <span style={{ color: 'var(--accent-primary)' }}>C</span>
-        {isHovered && <span className="animate-fade-in" style={{ color: 'var(--text-secondary)' }}>rostic</span>}
-      </div>
-      <div style={{ display: 'flex', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-        <span style={{ color: 'var(--accent-primary)' }}>R</span>
-        {isHovered && <span className="animate-fade-in" style={{ color: 'var(--text-secondary)' }}>esponde</span>}
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.1, fontSize: '1.2rem', fontFamily: 'monospace', fontWeight: 'bold' }}>
+       <div style={{ display: 'flex', overflow: 'hidden', whiteSpace: 'nowrap' }}><span style={{ color: '#8b5cf6' }}>A</span>{isHovered && <span className="animate-fade-in" style={{ color: 'var(--text-secondary)' }}>lbert</span>}</div>
+       <div style={{ display: 'flex', overflow: 'hidden', whiteSpace: 'nowrap' }}><span style={{ color: '#8b5cf6' }}>C</span>{isHovered && <span className="animate-fade-in" style={{ color: 'var(--text-secondary)' }}>rostic</span>}</div>
+       <div style={{ display: 'flex', overflow: 'hidden', whiteSpace: 'nowrap' }}><span style={{ color: '#8b5cf6' }}>R</span>{isHovered && <span className="animate-fade-in" style={{ color: 'var(--text-secondary)' }}>esponde</span>}</div>
     </div>
   );
 
   const handleLanguageSelect = (lang: 'es' | 'en') => {
     dispatch({ type: 'SET_LANG', payload: lang });
-    dispatch({ type: 'SET_SCREEN', payload: 'home' });
+    if (!state.tutorialCompleted) {
+      navigate('/tutorial');
+    } else {
+      dispatch({ type: 'SET_SCREEN', payload: 'home' });
+    }
   };
 
   const handleModeSelect = (modeId: string) => {
-    switch (modeId) {
-      case 'challenge':
+    if (modeId === 'challenge') {
+      const dailyDone = state.dailyChallengeLastDone && new Date(state.dailyChallengeLastDone).toDateString() === new Date().toDateString();
+      if (!state.tutorialCompleted) {
+        alert('El modo Desafío del Día no será operativo hasta que no se pase antes por el Tutorial.');
+      } else if (dailyDone) {
+        alert('Mañana habrá un nuevo desafío.');
+      } else {
         dispatch({ type: 'SET_SCREEN', payload: 'preview' });
         navigate('/preview');
-        break;
-      case 'free':
-        dispatch({ type: 'SET_SCREEN', payload: 'free-modes-select' });
-        navigate('/free-modes');
-        break;
-      case 'tutorial':
-        navigate('/tutorial');
-        break;
-      case 'song':
-        if (isTutorialCompleted) {
-          navigate('/song');
-        } else {
-          alert('Se desbloquea tras terminar el tutorial.');
-        }
-        break;
-      default:
-        break;
+      }
+    } else if (modeId === 'free') {
+      dispatch({ type: 'SET_SCREEN', payload: 'free-modes-select' });
+      navigate('/free-modes');
+    } else if (modeId === 'tutorial') {
+      navigate('/tutorial');
+    } else if (modeId === 'song') {
+      if (state.tutorialCompleted) {
+        navigate('/song');
+      } else {
+        alert('Se desbloquea tras terminar el tutorial.');
+      }
     }
   };
 
@@ -88,42 +70,37 @@ const HomePage: React.FC = () => {
     return (
       <div className="screen-container">
         <h1 className="logo animate-fade-in">VERTIC</h1>
-        <p className="subtitle animate-fade-in delay-1">
-          {aiData.es.langPrompt} / {aiData.en.langPrompt}
-        </p>
-        <div className="language-select-container animate-fade-in delay-2">
-          <div className="grid-layout" style={{ marginTop: '2rem', gridTemplateColumns: 'repeat(2, 1fr)', maxWidth: '500px' }}>
-            <div
-              className="glass-panel"
-              style={{ padding: '2rem', cursor: 'pointer', textAlign: 'center' }}
-              onMouseEnter={() => setHoveredLang('es')}
-              onMouseLeave={() => setHoveredLang(null)}
-              onClick={() => handleLanguageSelect('es')}
+        <p className="subtitle animate-fade-in delay-1">{aiData.es.langPrompt} / {aiData.en.langPrompt}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem', marginTop: '3rem' }}>
+          <div style={{ display: 'flex', gap: '2rem' }}>
+            <div 
+               className="glass-panel animate-fade-in delay-2" 
+               style={{ padding: '2rem', cursor: 'pointer', textAlign: 'center', minWidth: '150px' }} 
+               onMouseEnter={() => setHoveredLang('es')}
+               onMouseLeave={() => setHoveredLang(null)}
+               onClick={() => handleLanguageSelect('es')}
             >
               <h2>ESPAÑOL</h2>
             </div>
-            <div
-              className="glass-panel"
-              style={{ padding: '2rem', textAlign: 'center', opacity: 0.5, pointerEvents: 'none', cursor: 'not-allowed' }}
-              onMouseEnter={() => setHoveredLang('en')}
-              onMouseLeave={() => setHoveredLang(null)}
+            <div 
+               className="glass-panel animate-fade-in delay-3" 
+               style={{ padding: '2rem', textAlign: 'center', minWidth: '150px', opacity: 0.5, cursor: 'not-allowed' }} 
+               onMouseEnter={() => setHoveredLang('en')}
+               onMouseLeave={() => setHoveredLang(null)}
+               onClick={() => alert("No disponible/Not available")}
             >
-              <h2>ENGLISH</h2>
+               <h2>ENGLISH</h2>
             </div>
           </div>
-
-          <div className="lang-hint animate-fade-in" style={{ 
-            height: '2rem', 
-            marginTop: '2rem', 
-            color: 'var(--accent-secondary)', 
-            fontSize: '1.1rem', 
-            fontWeight: '500', 
-            textAlign: 'center' 
-          }}>
+          
+          <div style={{ height: '2rem', marginTop: '1rem', color: 'var(--accent-secondary)', fontSize: '1.1rem', fontWeight: '500', transition: 'all 0.3s' }}>
             {hoveredLang === 'es' && "Con reglas de ortografía española"}
             {hoveredLang === 'en' && "With English spelling rules"}
           </div>
         </div>
+        <p className="animate-fade-in" style={{ position: 'fixed', bottom: '2rem', color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', maxWidth: '80%', opacity: 0.7 }}>
+          Versión de prueba. VERTIC no funciona debidamente en dispositivos móviles: sólo en ordenador. Disculpen las molestias.
+        </p>
       </div>
     );
   }
@@ -132,93 +109,87 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="screen-container">
-      <button
-        className="btn btn-secondary animate-fade-in"
-        style={{ position: 'absolute', top: '2rem', left: '2rem' }}
+      <button 
+        className="btn btn-secondary animate-fade-in" 
+        style={{ position: 'absolute', top: '2rem', left: '2rem', gap: '0.5rem' }}
         onClick={() => dispatch({ type: 'SET_SCREEN', payload: 'language' })}
       >
-        <Globe size={18} /> Idioma
+        <Globe size={18} /> Idioma / Lang
       </button>
 
       <h1 className="logo animate-fade-in delay-1">{t.title}</h1>
       <p className="subtitle animate-fade-in delay-2">{t.subtitle}</p>
 
-      <div className="grid-layout">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginTop: '3rem', maxWidth: '800px', width: '100%' }}>
         {t.modes.map((mode: any, i: number) => {
           const ModeIcon = mode.id === 'challenge' ? Sparkles : mode.id === 'free' ? Bird : mode.id === 'tutorial' ? BookOpen : Music;
-          const isChallenge = mode.id === 'challenge';
-          
           return (
-            <div
-              key={mode.id}
-              className={`glass-panel animate-fade-in delay-${(i % 5) + 1}`}
-              style={{ 
-                padding: '2rem', 
-                cursor: 'pointer', 
-                border: isChallenge ? '1px solid var(--accent-primary)' : '',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem'
-              }}
-              onClick={() => handleModeSelect(mode.id)}
-              onMouseEnter={() => setHoveredMode(mode.id)}
-              onMouseLeave={() => setHoveredMode(null)}
-            >
-              <div style={{ color: isChallenge ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
-                {mode.id === 'tutorial' ? (
-                  <AcrIcon isHovered={hoveredMode === 'tutorial'} />
-                ) : (
-                  <ModeIcon size={36} strokeWidth={1.5} />
-                )}
-              </div>
-
-              <h3 style={{ color: isChallenge ? 'var(--accent-primary)' : '' }}>
-                {mode.id === 'tutorial'
-                  ? (hoveredMode === 'tutorial' ? 'Tutorial' : mode.h)
-                  : mode.h}
-              </h3>
-
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', minHeight: '3rem' }}>
-                {mode.id === 'tutorial' && hoveredMode !== 'tutorial' ? mode.d :
-                  mode.id === 'song' && hoveredMode === 'song' ? '¡Escucha el tema de Vertic!' :
-                    mode.id === 'challenge' && hoveredMode === 'challenge' ? '¿Cuál será la temática de hoy?' :
-                      mode.d}
-              </p>
-            </div>
-          )
-        })}
-
-        {hasSavedWorks && (
-          <div
-            className="glass-panel animate-fade-in delay-5"
-            style={{ 
-              padding: '2rem', 
-              cursor: 'pointer', 
-              border: '1px solid var(--accent-secondary)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem'
-            }}
-            onClick={() => navigate('/saved-works')}
+          <div 
+            key={mode.id} 
+            className={`glass-panel animate-fade-in delay-${(i % 3) + 1}`}
+            style={{ padding: '1.5rem', cursor: 'pointer', border: mode.id === 'challenge' ? '1px solid var(--accent-primary)' : '' }}
+            onClick={() => handleModeSelect(mode.id)}
+            onMouseEnter={() => setHoveredMode(mode.id)}
+            onMouseLeave={() => setHoveredMode(null)}
           >
-            <div style={{ color: 'var(--accent-secondary)' }}>
-              <BookOpen size={36} strokeWidth={1.5} />
-            </div>
-
-            <h3 style={{ color: 'var(--accent-secondary)' }}>
-              Obras aprobadas
+            {mode.id === 'tutorial' ? (
+                <div style={{ marginBottom: '1rem', minHeight: '40px', display: 'flex', alignItems: 'center' }}>
+                     <AcrIcon isHovered={hoveredMode === 'tutorial'} />
+                </div>
+            ) : (
+                <div style={{ marginBottom: '1rem', color: mode.id === 'challenge' ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
+                   <ModeIcon size={36} strokeWidth={1.5} />
+                </div>
+            )}
+            
+            <h3 style={{ marginBottom: '0.5rem', color: mode.id === 'challenge' ? 'var(--accent-primary)' : '' }}>
+                {mode.id === 'tutorial' 
+                   ? (hoveredMode === 'tutorial' ? 'Tutorial' : '') 
+                   : mode.h}
             </h3>
-
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-              Tu colección de verticálogos guardados.
+            
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', minHeight: '1.2rem', transition: 'all 0.3s' }}>
+                {mode.id === 'tutorial' && hoveredMode !== 'tutorial' ? '' : 
+                 mode.id === 'song' && hoveredMode === 'song' ? '¡Escucha el tema de Vertic!' : 
+                 mode.id === 'challenge' && hoveredMode === 'challenge' ? (
+                   (state.dailyChallengeLastDone && new Date(state.dailyChallengeLastDone).toDateString() === new Date().toDateString())
+                   ? 'Mañana habrá un nuevo desafío'
+                   : '¿Cuál será la temática de hoy?'
+                 ) : 
+                 mode.d}
             </p>
           </div>
+        )})}
+
+        {/* Conditionally rendered Saved Works button */}
+        {hasSavedWorks && (
+            <div 
+              className={`glass-panel animate-fade-in delay-5`}
+              style={{ padding: '1.5rem', cursor: 'pointer', border: '1px solid #10b981' }}
+              onClick={() => navigate('/saved-works')}
+              onMouseEnter={() => setHoveredMode('saved')}
+              onMouseLeave={() => setHoveredMode(null)}
+            >
+              <div style={{ marginBottom: '1rem', color: '#10b981' }}>
+                 <BookOpen size={36} strokeWidth={1.5} />
+              </div>
+              
+              <h3 style={{ marginBottom: '0.5rem', color: '#10b981' }}>
+                  Obras aprobadas por Albert Crostic
+              </h3>
+              
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  Tu colección de verticálogos
+              </p>
+            </div>
         )}
       </div>
+      <p className="animate-fade-in" style={{ marginTop: '4rem', color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', maxWidth: '80%', opacity: 0.7 }}>
+          Versión de prueba. VERTIC no funciona debidamente en dispositivos móviles: sólo en ordenador. Disculpen las molestias.
+      </p>
       <PageTitle title="Inicio" />
     </div>
   );
 };
 
 export default HomePage;
-

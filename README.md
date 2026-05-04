@@ -1,44 +1,58 @@
-# Vertic
+# ✍️ Verticálogo
 
-**Vertic** es una aplicación interactiva para la creación de "verticálogos": diálogos literarios construidos mediante acrósticos. Acompañado por el mentor Albert Crostic, los usuarios pueden experimentar con el vocabulario y la estructura narrativa de una manera única y visual.
+**Verticálogo** es una aplicación web interactiva diseñada para la creación y exploración de acrósticos dinámicos. Permite a los usuarios generar frases verticalizadas a partir de nombres o palabras clave, integrando mecánicas de juego, tutoriales guiados y un sistema de "nexos" para conectar versos de forma creativa.
 
-## Características
+## ✨ Características Principales
 
-- **Diseño Premium**: Interfaz moderna con estética *glassmorphism*, optimizada para una experiencia inmersiva.
-- **Totalmente Responsivo**: Disfruta de la experiencia tanto en dispositivos móviles como en escritorio.
-- **Modos de Juego**: Tutorial interactivo, modo libre y retos diarios.
-- **Mentoría IA**: Albert Crostic te guía a través de los conceptos de los verticálogos y nexos.
-- **Persistencia**: Guarda tus mejores obras localmente.
+- 🎮 **Modos de Juego**: Incluye desafíos diarios, modo libre y un tutorial interactivo para aprender las mecánicas.
+- 🧩 **Sistema de Nexos**: Herramienta única para conectar las líneas de los acrósticos de manera fluida y coherente.
+- 🎵 **Integración Multimedia**: Soporte para letras de canciones y visualizaciones dinámicas.
+- 🎨 **Diseño Premium**: Interfaz moderna, responsiva y con micro-animaciones para una experiencia de usuario superior.
+- 💾 **Persistencia**: Sistema para guardar y gestionar tus creaciones favoritas.
 
-## Tecnologías Utilizadas
+## 🚀 Tecnologías Utilizadas
 
-- **React 19**: Biblioteca principal para la interfaz de usuario.
-- **Vite**: Herramienta de construcción ultra-rápida.
-- **TypeScript**: Tipado estático para un desarrollo robusto.
-- **Lucide React**: Iconografía moderna y consistente.
-- **Vanilla CSS**: Sistema de diseño a medida sin dependencias externas pesadas.
+- **Core**: [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- **Build Tool**: [Vite](https://vitejs.dev/)
+- **Routing**: [React Router 7](https://reactrouter.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Styling**: Vanilla CSS (Moderno y customizado)
 
-## Instalación y Uso
+## 🛠️ Instalación y Uso
 
-1. Instala las dependencias:
+Sigue estos pasos para ejecutar el proyecto localmente:
+
+1. **Clonar el repositorio**:
+   ```bash
+   git clone https://github.com/tu-usuario/verticalogo.git
+   cd verticalogo
+   ```
+
+2. **Instalar dependencias**:
    ```bash
    npm install
    ```
-2. Inicia el servidor de desarrollo:
+
+3. **Ejecutar en modo desarrollo**:
    ```bash
    npm run dev
    ```
-3. Para generar la versión de producción:
+
+4. **Construir para producción**:
    ```bash
    npm run build
    ```
 
-## Sobre el Refactor
+## 📂 Estructura del Proyecto
 
-Este proyecto ha sido refactorizado completamente para:
-1.  **Mejorar la arquitectura**: Extracción de componentes reutilizables y limpieza de estilos en línea.
-2.  **Optimizar la Responsividad**: Implementación de un sistema de diseño flexible basado en CSS variables y media queries.
-3.  **Preparación para Producción**: Estructura de archivos limpia y documentación lista para compartir en GitHub.
+- `src/features`: Lógica central del juego y componentes específicos.
+- `src/pages`: Vistas principales de la aplicación.
+- `src/components`: Componentes de UI reutilizables.
+- `media/`: Recursos visuales y frames de animación.
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.
 
 ---
-Desarrollado con ❤️ por Kino. Refactorizado por Antigravity.
+Hecho con ❤️ para amantes de las palabras.
